@@ -3,6 +3,7 @@ package jm.task.core.jdbc.dao;
 import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 
+import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,21 +17,19 @@ public class UserDaoJDBCImpl implements UserDao {
     private String deleteUsersql = "DELETE FROM userstable WHERE id=?";
     private String getAllUserssql = "SELECT * FROM userstable";
     private String cleanUTsql = "DELETE FROM userstable";
+    private String existsTablesql = "SELECT count(*) FROM information_schema.tables WHERE table_name = ? ;";
 
     public UserDaoJDBCImpl() {
 
     }
 
-    public void createUsersTable() {
+    public void createUsersTable() throws SQLException {
+        boolean isExist = existsTable();
+
         try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
 
-            DatabaseMetaData dmd = connection.getMetaData();
-            ResultSet resultSet = dmd.getTables(null, null, "userstable", null);
-
-            if (!resultSet.next()) {
+            if (!existsTable()) {
                 statement.executeUpdate(createUTsql);
-            } else {
-                System.out.println("Таблица уже существует");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -38,16 +37,12 @@ public class UserDaoJDBCImpl implements UserDao {
 
     }
 
-    public void dropUsersTable() {
+    public void dropUsersTable() throws SQLException {
+        boolean isExist = existsTable();
         try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
 
-            DatabaseMetaData dmd = connection.getMetaData();
-            ResultSet resultSet = dmd.getTables(null, null, "userstable", null);
-
-            if (resultSet.next()) {
+            if (isExist) {
                 statement.executeUpdate(dropUTsql);
-            } else {
-                System.out.println("Таблицы не существует. Нечего удалять.");
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -84,6 +79,13 @@ public class UserDaoJDBCImpl implements UserDao {
         }
     }
 
+    /*
+       Замечание от ментора:
+       В getAllUsers() вместо Statement используй PreparedStatement, для изучения
+       https://mkyong.com/tutorials/jdbc-tutorials/
+       , я не понимаю чем указанный там способ отличается от моего, только самим фактом наличия PreparedStatement?
+       https://mkyong.com/jdbc/jdbc-preparestatement-example-select-list-of-the-records/
+   */
     public List<User> getAllUsers() {
 
         List<User> usersList = new ArrayList<>();
@@ -119,5 +121,22 @@ public class UserDaoJDBCImpl implements UserDao {
             throw new RuntimeException(e);
         }
 
+    }
+
+    private boolean existsTable() throws SQLException {
+        int exist;
+
+        try (Connection connection = Util.getConnection();
+             PreparedStatement pStatement = connection.prepareStatement(existsTablesql)) {
+
+            pStatement.setString(1, "userstable");
+            ResultSet resultSet = pStatement.executeQuery();
+            resultSet.next();
+            exist = resultSet.getInt(1);
+
+        }catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        return  exist != 0;
     }
 }
