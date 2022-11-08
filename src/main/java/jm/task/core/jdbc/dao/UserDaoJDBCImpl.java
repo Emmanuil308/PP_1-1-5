@@ -10,9 +10,9 @@ import java.util.List;
 
 public class UserDaoJDBCImpl implements UserDao {
 
-    private String createUTsql = "CREATE TABLE userstable (`Id` INT NOT NULL AUTO_INCREMENT," +
+    private String createUTsql = "CREATE TABLE IF NOT EXISTS  userstable (`Id` INT NOT NULL AUTO_INCREMENT," +
             "`Name` VARCHAR(100) NULL,`Lastname` VARCHAR(100) NULL,`Age` INT NULL, PRIMARY KEY (`Id`));";
-    private String dropUTsql = "DROP TABLE userstable;";
+    private String dropUTsql = "DROP TABLE IF EXISTS userstable;";
     private String saveUsersql = "INSERT INTO userstable (Name, Lastname, Age) VALUES (?, ?, ?);";
     private String deleteUsersql = "DELETE FROM userstable WHERE id=?";
     private String getAllUserssql = "SELECT * FROM userstable";
@@ -23,27 +23,23 @@ public class UserDaoJDBCImpl implements UserDao {
 
     }
 
-    public void createUsersTable() throws SQLException {
-        boolean isExist = existsTable();
+    public void createUsersTable() {
 
         try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
 
-            if (!existsTable()) {
-                statement.executeUpdate(createUTsql);
-            }
+            statement.executeUpdate(createUTsql);
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
 
     }
 
-    public void dropUsersTable() throws SQLException {
-        boolean isExist = existsTable();
-        try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
+    public void dropUsersTable() {
 
-            if (isExist) {
-                statement.executeUpdate(dropUTsql);
-            }
+        try (Connection connection = Util.getConnection(); Statement statement = connection.createStatement()) {
+            statement.executeUpdate(dropUTsql);
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -79,13 +75,6 @@ public class UserDaoJDBCImpl implements UserDao {
         }
     }
 
-    /*
-       Замечание от ментора:
-       В getAllUsers() вместо Statement используй PreparedStatement, для изучения
-       https://mkyong.com/tutorials/jdbc-tutorials/
-       , я не понимаю чем указанный там способ отличается от моего, только самим фактом наличия PreparedStatement?
-       https://mkyong.com/jdbc/jdbc-preparestatement-example-select-list-of-the-records/
-   */
     public List<User> getAllUsers() {
 
         List<User> usersList = new ArrayList<>();
@@ -107,7 +96,6 @@ public class UserDaoJDBCImpl implements UserDao {
         } catch (SQLException e) {
             throw new RuntimeException();
         }
-
         return usersList;
     }
 
@@ -123,20 +111,4 @@ public class UserDaoJDBCImpl implements UserDao {
 
     }
 
-    private boolean existsTable() throws SQLException {
-        int exist;
-
-        try (Connection connection = Util.getConnection();
-             PreparedStatement pStatement = connection.prepareStatement(existsTablesql)) {
-
-            pStatement.setString(1, "userstable");
-            ResultSet resultSet = pStatement.executeQuery();
-            resultSet.next();
-            exist = resultSet.getInt(1);
-
-        }catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-        return  exist != 0;
-    }
 }
