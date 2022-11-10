@@ -37,8 +37,8 @@ public class Util  {
                 properties.put(Environment.USER, USERNAME);
                 properties.put(Environment.PASS, PASSWORD);
                 properties.put(Environment.DIALECT, "org.hibernate.dialect.MySQLDialect");
-                properties.put(Environment.SHOW_SQL, true);
-                properties.put(Environment.FORMAT_SQL, true);
+                properties.put(Environment.SHOW_SQL, false);
+                properties.put(Environment.FORMAT_SQL, false);
 
                 sessionFactory = new Configuration().addAnnotatedClass(User.class)
                         .setProperties(properties).buildSessionFactory();
